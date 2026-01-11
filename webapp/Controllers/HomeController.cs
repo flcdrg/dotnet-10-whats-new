@@ -1,14 +1,41 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using webapp.Models;
+using webapp.Services;
 
 namespace webapp.Controllers;
 
 public class HomeController : Controller
 {
-    public IActionResult Index()
+    private readonly IProductService _productService;
+    private readonly ILogger<HomeController> _logger;
+
+    public HomeController(IProductService productService, ILogger<HomeController> logger)
     {
-        return View();
+        _productService = productService;
+        _logger = logger;
+    }
+
+    public async Task<IActionResult> Index()
+    {
+        var pets = await _productService.GetAllProductsAsync();
+        return View(pets);
+    }
+
+    public async Task<IActionResult> Search(string query)
+    {
+        var pets = await _productService.SearchProductsAsync(query ?? string.Empty);
+        return View("Index", pets);
+    }
+
+    public async Task<IActionResult> Details(int id)
+    {
+        var pet = await _productService.GetProductByIdAsync(id);
+        if (pet == null)
+        {
+            return NotFound();
+        }
+        return View(pet);
     }
 
     public IActionResult Privacy()
