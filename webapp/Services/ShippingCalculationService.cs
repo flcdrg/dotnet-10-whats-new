@@ -40,8 +40,8 @@ public class ShippingCalculationService : IShippingCalculationService
         var rate = _context.AustralianShippingRates
             .AsNoTracking()
             .FirstOrDefault(r => 
-                r.State.Equals(state, StringComparison.OrdinalIgnoreCase) && 
-                r.ShippingMethod.Equals(shippingMethod, StringComparison.OrdinalIgnoreCase));
+                r.State == state && 
+                r.ShippingMethod == shippingMethod);
 
         return rate?.Rate ?? 10m;
     }
@@ -50,7 +50,7 @@ public class ShippingCalculationService : IShippingCalculationService
     {
         var rate = _context.InternationalShippingRates
             .AsNoTracking()
-            .FirstOrDefault(r => r.Country.Equals(country, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(r => r.Country.Equals(country));
 
         if (rate == null)
         {
