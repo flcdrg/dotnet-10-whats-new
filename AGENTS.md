@@ -2,9 +2,10 @@
 
 ## Running the Application
 
-This project is a .NET 10.0 web application that demonstrates new features in .NET 10.
+This project is a .NET 10.0 web application. It should only use features available in .NET 9 or C# 13. The intention is that it can be used to show code that can then be upgraded later taking advantage of .NET 10 and C# 14 features.
 
 ### Prerequisites
+
 - .NET 10.0 SDK (version 10.0.101 or later) must be installed
 - The SDK version is specified in `global.json`
 
@@ -29,6 +30,7 @@ dotnet run --project webapp/webapp.csproj
 ```
 
 ### Expected Behavior
+
 - The application will start and listen on:
   - HTTP: http://localhost:5152
   - HTTPS: https://localhost:7163
@@ -36,12 +38,14 @@ dotnet run --project webapp/webapp.csproj
 - The application runs in Development mode by default
 
 ### Project Structure
+
 - **Project File**: `webapp/webapp.csproj` - Main project file
 - **Solution File**: `webapp/webapp.sln` - Solution file
 - **Entry Point**: `webapp/Program.cs` - Application startup
 - **Target Framework**: .NET 10.0 (`net10.0`)
 
 ### Key Dependencies
+
 - Mediator.SourceGenerator (3.0.0)
 - Mediator.Abstractions (3.0.0)
 - Microsoft.EntityFrameworkCore.Sqlite (10.0.0)
@@ -76,6 +80,10 @@ dotnet run --project webapp/webapp.csproj --launch-profile https
 # Clean build artifacts
 dotnet clean webapp/webapp.csproj
 ```
+
+## Architecture
+
+Controller classes should use the Mediator pattern (via the <https://github.com/martinothamar/Mediator> library)
 
 ## Agent Guidelines
 

@@ -1,4 +1,6 @@
+using Mediator;
 using Microsoft.EntityFrameworkCore;
+using webapp.Application.Queries;
 using webapp.Data;
 using webapp.Services;
 
@@ -6,6 +8,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddMediator(
+    (MediatorOptions options) =>
+    {
+        options.Assemblies = [typeof(GetPetsQuery).Assembly];
+        options.ServiceLifetime = ServiceLifetime.Scoped;
+    }
+);
 
 // Register EF Core with SQLite
 builder.Services.AddDbContext<PetstoreContext>(options =>
