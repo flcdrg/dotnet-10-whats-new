@@ -2,16 +2,11 @@ namespace webapp.Models;
 
 public class InternationalShippingRate
 {
-    private int _id;
     private string _country = string.Empty; // "UK", "NewZealand", "Antarctica"
     private decimal _rate1To10Kg;
     private decimal _rateOver10Kg;
 
-    public int Id
-    {
-        get { return _id; }
-        set { _id = value; }
-    }
+    public int Id { get; set; }
 
     public string Country
     {

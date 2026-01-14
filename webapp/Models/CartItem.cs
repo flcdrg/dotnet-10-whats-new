@@ -2,24 +2,14 @@ namespace webapp.Models;
 
 public class CartItem
 {
-    private int _id;
-    private int _petId;
     private string _petName = string.Empty;
     private decimal _petPrice;
     private int _quantity;
     private string _imageUrl = string.Empty;
 
-    public int Id
-    {
-        get { return _id; }
-        set { _id = value; }
-    }
+    public int Id { get; set; }
 
-    public int PetId
-    {
-        get { return _petId; }
-        set { _petId = value; }
-    }
+    public int PetId { get; set; }
 
     public string PetName
     {
