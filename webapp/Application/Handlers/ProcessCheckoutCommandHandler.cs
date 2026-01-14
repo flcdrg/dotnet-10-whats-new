@@ -10,15 +10,18 @@ public class ProcessCheckoutCommandHandler : IRequestHandler<ProcessCheckoutComm
     private readonly ICountryService _countryService;
     private readonly IGstCalculationService _gstService;
     private readonly IShippingCalculationService _shippingService;
+    private readonly ITimeProvider _timeProvider;
 
     public ProcessCheckoutCommandHandler(
         ICountryService countryService,
         IGstCalculationService gstService,
-        IShippingCalculationService shippingService)
+        IShippingCalculationService shippingService,
+        ITimeProvider timeProvider)
     {
         _countryService = countryService;
         _gstService = gstService;
         _shippingService = shippingService;
+        _timeProvider = timeProvider;
     }
 
     public async ValueTask<Order> Handle(ProcessCheckoutCommand request, CancellationToken cancellationToken)
@@ -29,7 +32,7 @@ public class ProcessCheckoutCommandHandler : IRequestHandler<ProcessCheckoutComm
         order.Items = request.Items;
         order.Subtotal = request.Items.Sum(i => i.GetLineTotal());
         order.Country = selectedCountry?.Name ?? request.Country;
-        order.State = request.Country.Equals("Australia", StringComparison.OrdinalIgnoreCase) ? request.State : string.Empty;
+        order.State = request.Country.Equals("AU", StringComparison.OrdinalIgnoreCase) ? request.State : string.Empty;
         order.ShippingMethod = request.ShippingMethod;
 
         // Calculate shipping (assuming 2kg total weight for now)
@@ -41,9 +44,10 @@ public class ProcessCheckoutCommandHandler : IRequestHandler<ProcessCheckoutComm
 
         // Calculate total
         order.Total = order.Subtotal + order.ShippingCost + order.GstAmount;
-        order.OrderNumber = $"ORD-{DateTime.UtcNow.Ticks}";
-        order.CreatedAt = DateTime.UtcNow;
-        order.LastModifiedAt = DateTime.UtcNow;
+        var now = _timeProvider.UtcNow;
+        order.OrderNumber = $"ORD-{now.Ticks}";
+        order.CreatedAt = now;
+        order.LastModifiedAt = now;
 
         await _countryService.SetCurrentCountryAsync(request.Country);
 

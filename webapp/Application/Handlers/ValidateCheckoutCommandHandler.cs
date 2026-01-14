@@ -31,7 +31,7 @@ public class ValidateCheckoutCommandHandler : IRequestHandler<ValidateCheckoutCo
             result.IsValid = false;
         }
 
-        if (!request.Country.Equals("Australia", StringComparison.OrdinalIgnoreCase))
+        if (!request.Country.Equals("AU", StringComparison.OrdinalIgnoreCase))
         {
             request.State = string.Empty;
         }
@@ -42,22 +42,25 @@ public class ValidateCheckoutCommandHandler : IRequestHandler<ValidateCheckoutCo
         }
 
         var restrictedItems = new List<string>();
-        foreach (var item in request.Items)
+        if (request.Items != null)
         {
-            if (await _productService.IsPetRestrictedAsync(item.PetId, request.Country))
+            foreach (var item in request.Items)
             {
-                restrictedItems.Add(item.PetName);
+                if (await _productService.IsPetRestrictedAsync(item.PetId, request.Country))
+                {
+                    restrictedItems.Add(item.PetName);
+                }
+            }
+
+            if (restrictedItems.Count > 0)
+            {
+                var countryName = selectedCountry?.Name ?? request.Country;
+                result.Errors["items"] = $"The following items cannot be shipped to {countryName}: {string.Join(", ", restrictedItems)}";
+                result.IsValid = false;
             }
         }
 
-        if (restrictedItems.Count > 0)
-        {
-            var countryName = selectedCountry?.Name ?? request.Country;
-            result.Errors["items"] = $"The following items cannot be shipped to {countryName}: {string.Join(", ", restrictedItems)}";
-            result.IsValid = false;
-        }
-
-        var availableMethods = _shippingService.GetAvailableShippingMethods(request.Country, request.State);
+        var availableMethods = _shippingService.GetAvailableShippingMethods(request.Country, request.State) ?? new List<string>();
         if (!availableMethods.Contains(request.ShippingMethod))
         {
             result.Errors["shippingMethod"] = "Please select a valid shipping method.";

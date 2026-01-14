@@ -83,7 +83,16 @@ dotnet clean webapp/webapp.csproj
 
 ## Architecture
 
-Controller classes should use the Mediator pattern (via the <https://github.com/martinothamar/Mediator> library)
+Controller classes should use the Mediator pattern (via the <https://github.com/martinothamar/Mediator> library).
+
+### Unit tests
+
+- Using [xUnit.NET v3](https://xunit.net/docs/getting-started/v3/getting-started)
+- NSubstitute is available for mocking when necessary, but for simple cases manually written mocking classes are preferred.
+- [VerifyTests](https://github.com/VerifyTests/Verify) is available for snapshot testing. It should be preferred when needing to assert more complex data (object graphs)
+- Use 'Fixture' classes to encapsulate the preparation of the system to be tested. These can then be used by the unit test classes. Cake is a good example of this approach:
+  - [Unit test class](https://raw.githubusercontent.com/cake-build/cake/refs/heads/develop/src/Cake.Tests/Unit/ProgramTests.cs)
+  - [Fixture class](https://raw.githubusercontent.com/cake-build/cake/refs/heads/develop/src/Cake.Tests/Fixtures/ProgramFixture.cs)
 
 ## Agent Guidelines
 

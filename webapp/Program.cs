@@ -24,6 +24,7 @@ builder.Services.AddDbContext<PetstoreContext>(options =>
 builder.Services.AddHttpContextAccessor();
 
 // Register custom services
+builder.Services.AddScoped<ITimeProvider, SystemTimeProvider>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IGstCalculationService, GstCalculationService>();
 builder.Services.AddScoped<IShippingCalculationService, ShippingCalculationService>();

@@ -21,10 +21,10 @@ public class PetstoreContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<Country>().HasData(
-            new Country { Id = 1, Code = "Australia", Name = "Australia" },
-            new Country { Id = 2, Code = "UK", Name = "United Kingdom" },
-            new Country { Id = 3, Code = "NewZealand", Name = "New Zealand" },
-            new Country { Id = 4, Code = "Antarctica", Name = "Antarctica" }
+            new Country { Id = 1, Code = "AU", Name = "Australia" },
+            new Country { Id = 2, Code = "GB", Name = "United Kingdom" },
+            new Country { Id = 3, Code = "NZ", Name = "New Zealand" },
+            new Country { Id = 4, Code = "US", Name = "United States" }
         );
 
         // Seed Pet data
