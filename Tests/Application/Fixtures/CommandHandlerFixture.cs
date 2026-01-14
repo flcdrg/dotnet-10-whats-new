@@ -1,4 +1,5 @@
 using Mediator;
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using webapp.Services;
 
@@ -10,5 +11,5 @@ public class CommandHandlerFixture
     public ICountryService CountryService { get; set; } = Substitute.For<ICountryService>();
     public IGstCalculationService GstService { get; set; } = Substitute.For<IGstCalculationService>();
     public IShippingCalculationService ShippingService { get; set; } = Substitute.For<IShippingCalculationService>();
-    public ITimeProvider TimeProvider { get; set; } = Substitute.For<ITimeProvider>();
+    public FakeTimeProvider TimeProvider { get; set; } = new();
 }

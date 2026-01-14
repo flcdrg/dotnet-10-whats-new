@@ -26,7 +26,7 @@ public class ProcessCheckoutCommandHandlerTests
     public async Task Handle_WithValidCheckout_CreatesOrderWithCorrectTotals()
     {
         // Arrange
-        var now = new DateTime(2025, 1, 14, 12, 0, 0, DateTimeKind.Utc);
+        var now = new DateTimeOffset(2025, 1, 14, 12, 0, 0, TimeSpan.Zero);
         var country = new Country { Code = "AU", Name = "Australia" };
         var items = new List<CartItem>
         {
@@ -34,7 +34,7 @@ public class ProcessCheckoutCommandHandlerTests
             new() { PetId = 2, Quantity = 1, PetPrice = 30m }
         };
 
-        _fixture.TimeProvider.UtcNow.Returns(now);
+        _fixture.TimeProvider.SetUtcNow(now);
         _fixture.CountryService.GetCountryByCodeAsync("AU").Returns(country);
         _fixture.ShippingService.CalculateShippingCost("AU", "NSW", 2m, "AustraliaPost").Returns(12.50m);
         _fixture.GstService.CalculateGst(130m, "AU").Returns(13m);
@@ -63,19 +63,19 @@ public class ProcessCheckoutCommandHandlerTests
         Assert.Equal(13m, result.GstAmount);
         Assert.Equal(155.50m, result.Total); // 130 + 12.50 + 13
         Assert.StartsWith("ORD-", result.OrderNumber);
-        Assert.Equal(now, result.CreatedAt);
-        Assert.Equal(now, result.LastModifiedAt);
+        Assert.Equal(now.UtcDateTime, result.CreatedAt);
+        Assert.Equal(now.UtcDateTime, result.LastModifiedAt);
     }
 
     [Fact]
     public async Task Handle_WithNonAustralianCountry_ClearsState()
     {
         // Arrange
-        var now = new DateTime(2025, 1, 14, 12, 0, 0, DateTimeKind.Utc);
+        var now = new DateTimeOffset(2025, 1, 14, 12, 0, 0, TimeSpan.Zero);
         var country = new Country { Code = "US", Name = "United States" };
         var items = new List<CartItem> { new() { PetId = 1, Quantity = 1, PetPrice = 100m } };
 
-        _fixture.TimeProvider.UtcNow.Returns(now);
+        _fixture.TimeProvider.SetUtcNow(now);
         _fixture.CountryService.GetCountryByCodeAsync("US").Returns(country);
         _fixture.ShippingService.CalculateShippingCost("US", "", 2m, "International Courier").Returns(25m);
         _fixture.GstService.CalculateGst(100m, "US").Returns(0m);
@@ -101,10 +101,10 @@ public class ProcessCheckoutCommandHandlerTests
     public async Task Handle_WithUnknownCountry_UsesCountryCode()
     {
         // Arrange
-        var now = new DateTime(2025, 1, 14, 12, 0, 0, DateTimeKind.Utc);
+        var now = new DateTimeOffset(2025, 1, 14, 12, 0, 0, TimeSpan.Zero);
         var items = new List<CartItem> { new() { PetId = 1, Quantity = 1, PetPrice = 100m } };
 
-        _fixture.TimeProvider.UtcNow.Returns(now);
+        _fixture.TimeProvider.SetUtcNow(now);
         _fixture.CountryService.GetCountryByCodeAsync("XX").Returns((Country?)null);
         _fixture.ShippingService.CalculateShippingCost("XX", "", 2m, "Method").Returns(0m);
         _fixture.GstService.CalculateGst(100m, "XX").Returns(0m);
@@ -130,11 +130,11 @@ public class ProcessCheckoutCommandHandlerTests
     public async Task Handle_SetsOrderNumber()
     {
         // Arrange
-        var now = new DateTime(2025, 1, 14, 12, 0, 0, DateTimeKind.Utc);
+        var now = new DateTimeOffset(2025, 1, 14, 12, 0, 0, TimeSpan.Zero);
         var country = new Country { Code = "AU", Name = "Australia" };
         var items = new List<CartItem>();
 
-        _fixture.TimeProvider.UtcNow.Returns(now);
+        _fixture.TimeProvider.SetUtcNow(now);
         _fixture.CountryService.GetCountryByCodeAsync("AU").Returns(country);
         _fixture.ShippingService.CalculateShippingCost("AU", "NSW", 2m, "AustraliaPost").Returns(10m);
         _fixture.GstService.CalculateGst(0m, "AU").Returns(0m);
@@ -153,7 +153,7 @@ public class ProcessCheckoutCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        var expectedOrderNumber = $"ORD-{now.Ticks}";
+        var expectedOrderNumber = $"ORD-{now.UtcTicks}";
         Assert.Equal(expectedOrderNumber, result.OrderNumber);
     }
 
@@ -161,11 +161,11 @@ public class ProcessCheckoutCommandHandlerTests
     public async Task Handle_UpdatesCurrentCountry()
     {
         // Arrange
-        var now = new DateTime(2025, 1, 14, 12, 0, 0, DateTimeKind.Utc);
+        var now = new DateTimeOffset(2025, 1, 14, 12, 0, 0, TimeSpan.Zero);
         var country = new Country { Code = "US", Name = "United States" };
         var items = new List<CartItem>();
 
-        _fixture.TimeProvider.UtcNow.Returns(now);
+        _fixture.TimeProvider.SetUtcNow(now);
         _fixture.CountryService.GetCountryByCodeAsync("US").Returns(country);
         _fixture.ShippingService.CalculateShippingCost("US", "", 2m, "International Courier").Returns(25m);
         _fixture.GstService.CalculateGst(0m, "US").Returns(0m);
@@ -191,7 +191,7 @@ public class ProcessCheckoutCommandHandlerTests
     public async Task Handle_WithMultipleItems_CalculatesCorrectSubtotal()
     {
         // Arrange
-        var now = new DateTime(2025, 1, 14, 12, 0, 0, DateTimeKind.Utc);
+        var now = new DateTimeOffset(2025, 1, 14, 12, 0, 0, TimeSpan.Zero);
         var country = new Country { Code = "AU", Name = "Australia" };
         var items = new List<CartItem>
         {
@@ -199,7 +199,7 @@ public class ProcessCheckoutCommandHandlerTests
             new() { PetId = 2, Quantity = 2, PetPrice = 100m }
         };
 
-        _fixture.TimeProvider.UtcNow.Returns(now);
+        _fixture.TimeProvider.SetUtcNow(now);
         _fixture.CountryService.GetCountryByCodeAsync("AU").Returns(country);
         _fixture.ShippingService.CalculateShippingCost("AU", "NSW", 2m, "AustraliaPost").Returns(10m);
         _fixture.GstService.CalculateGst(276.50m, "AU").Returns(27.65m);

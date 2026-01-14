@@ -10,13 +10,13 @@ public class ProcessCheckoutCommandHandler : IRequestHandler<ProcessCheckoutComm
     private readonly ICountryService _countryService;
     private readonly IGstCalculationService _gstService;
     private readonly IShippingCalculationService _shippingService;
-    private readonly ITimeProvider _timeProvider;
+    private readonly TimeProvider _timeProvider;
 
     public ProcessCheckoutCommandHandler(
         ICountryService countryService,
         IGstCalculationService gstService,
         IShippingCalculationService shippingService,
-        ITimeProvider timeProvider)
+        TimeProvider timeProvider)
     {
         _countryService = countryService;
         _gstService = gstService;
@@ -44,10 +44,11 @@ public class ProcessCheckoutCommandHandler : IRequestHandler<ProcessCheckoutComm
 
         // Calculate total
         order.Total = order.Subtotal + order.ShippingCost + order.GstAmount;
-        var now = _timeProvider.UtcNow;
-        order.OrderNumber = $"ORD-{now.Ticks}";
-        order.CreatedAt = now;
-        order.LastModifiedAt = now;
+        var now = _timeProvider.GetUtcNow();
+        var utcNow = now.UtcDateTime;
+        order.OrderNumber = $"ORD-{now.UtcTicks}";
+        order.CreatedAt = utcNow;
+        order.LastModifiedAt = utcNow;
 
         await _countryService.SetCurrentCountryAsync(request.Country);
 
