@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@inject webapp.Services.ICountryService CountryService
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -11,6 +12,11 @@
     <link rel="stylesheet" href="~/webapp.styles.css" asp-append-version="true" />
 </head>
 <body>
+    @{
+        var countries = await CountryService.GetAvailableCountriesAsync();
+        var currentCountryCode = await CountryService.GetCurrentCountryCodeAsync();
+        var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    }
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
@@ -30,6 +36,17 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">About</a>
                         </li>
                     </ul>
+                    <form method="post" asp-controller="Country" asp-action="Set" class="d-flex align-items-center me-3">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <select name="countryCode" class="form-select form-select-sm me-2" onchange="this.form.submit()">
+                            @foreach (var country in countries)
+                            {
+                                <option value="@country.Code" selected="@(country.Code.Equals(currentCountryCode, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@country.Name</option>
+                            }
+                        </select>
+                        <span class="text-muted small">Ship to</span>
+                    </form>
                     <form method="get" action="/Home/Search" class="d-flex me-3" role="search" style="width: 300px;">
                         <input class="form-control form-control-sm me-2" type="search" name="query" placeholder="Search pets..." aria-label="Search">
                         <button class="btn btn-outline-primary btn-sm" type="submit">Search</button>

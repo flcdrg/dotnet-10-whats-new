@@ -80,8 +80,10 @@ dotnet clean webapp/webapp.csproj
 ## Agent Guidelines
 
 When making changes to this project:
+
 1. Always test that `dotnet run` works after modifications
 2. Maintain the working directory context (run from `webapp` folder)
 3. Preserve the launch settings in `Properties/launchSettings.json`
 4. Keep the target framework as `net10.0` in the csproj file
 5. Ensure any new dependencies are compatible with .NET 10.0
+6. Don't use `StringComparison.OrdinalIgnoreCase` for code that is used by EF Core

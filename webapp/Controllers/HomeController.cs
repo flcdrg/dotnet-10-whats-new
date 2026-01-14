@@ -8,29 +8,40 @@ namespace webapp.Controllers;
 public class HomeController : Controller
 {
     private readonly IProductService _productService;
+    private readonly ICountryService _countryService;
     private readonly ILogger<HomeController> _logger;
 
-    public HomeController(IProductService productService, ILogger<HomeController> logger)
+    public HomeController(IProductService productService, ICountryService countryService, ILogger<HomeController> logger)
     {
         _productService = productService;
+        _countryService = countryService;
         _logger = logger;
     }
 
     public async Task<IActionResult> Index()
     {
-        var pets = await _productService.GetAllProductsAsync();
+        var countryCode = await _countryService.GetCurrentCountryCodeAsync();
+        var pets = await _productService.GetAllProductsAsync(countryCode);
         return View(pets);
     }
 
     public async Task<IActionResult> Search(string query)
     {
-        var pets = await _productService.SearchProductsAsync(query ?? string.Empty);
+        var countryCode = await _countryService.GetCurrentCountryCodeAsync();
+        var pets = await _productService.SearchProductsAsync(query ?? string.Empty, countryCode);
         return View("Index", pets);
     }
 
     public async Task<IActionResult> Details(int id)
     {
-        var pet = await _productService.GetProductByIdAsync(id);
+        var countryCode = await _countryService.GetCurrentCountryCodeAsync();
+        if (await _productService.IsPetRestrictedAsync(id, countryCode))
+        {
+            TempData["Error"] = "This pet is not available in your selected country.";
+            return RedirectToAction("Index");
+        }
+
+        var pet = await _productService.GetProductByIdAsync(id, countryCode);
         if (pet == null)
         {
             return NotFound();

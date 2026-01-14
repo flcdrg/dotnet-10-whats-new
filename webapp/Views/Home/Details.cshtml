@@ -5,6 +5,10 @@
 }
 
 <div class="container py-5">
+    @if (TempData["Error"] is string errorMessage)
+    {
+        <div class="alert alert-warning" role="alert">@errorMessage</div>
+    }
     <a href="/Home/Index" class="btn btn-outline-secondary mb-4">← Back to Home</a>
 
     <div class="row">

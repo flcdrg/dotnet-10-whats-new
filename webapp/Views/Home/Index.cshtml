@@ -7,6 +7,11 @@
 <div class="container py-5">
     <h1 class="mb-4">Welcome to Our Petstore</h1>
 
+    @if (TempData["Error"] is string errorMessage)
+    {
+        <div class="alert alert-warning" role="alert">@errorMessage</div>
+    }
+
     <div class="row mb-4">
         <div class="col-md-6">
             <form method="get" action="/Home/Search" class="input-group">

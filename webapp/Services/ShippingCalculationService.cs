@@ -1,5 +1,4 @@
 using webapp.Data;
-using webapp.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace webapp.Services;
@@ -10,7 +9,7 @@ public class ShippingCalculationService : IShippingCalculationService
 
     public ShippingCalculationService(PetstoreContext context)
     {
-        _context = context;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
     public decimal CalculateShippingCost(string country, string state, decimal weightKg, string shippingMethod)
@@ -20,14 +19,12 @@ public class ShippingCalculationService : IShippingCalculationService
             return 0;
         }
 
-        if (country.Equals("Australia", StringComparison.OrdinalIgnoreCase))
+        if (IsAustralia(country))
         {
             return CalculateAustralianShipping(state, shippingMethod);
         }
-        else
-        {
-            return CalculateInternationalShipping(country, weightKg);
-        }
+
+        return CalculateInternationalShipping(country, weightKg);
     }
 
     private decimal CalculateAustralianShipping(string state, string shippingMethod)
@@ -50,7 +47,8 @@ public class ShippingCalculationService : IShippingCalculationService
     {
         var rate = _context.InternationalShippingRates
             .AsNoTracking()
-            .FirstOrDefault(r => r.Country.Equals(country));
+            .Include(r => r.Country)
+            .FirstOrDefault(r => r.Country != null && r.Country.Code.Equals(country));
 
         if (rate == null)
         {
@@ -64,18 +62,28 @@ public class ShippingCalculationService : IShippingCalculationService
     {
         var methods = new List<string>();
 
-        if (country.Equals("Australia", StringComparison.OrdinalIgnoreCase))
+        if (IsAustralia(country))
         {
             methods.Add("AustraliaPost");
             methods.Add("Courier");
+            return methods;
         }
-        else if (country.Equals("UK", StringComparison.OrdinalIgnoreCase) ||
-                 country.Equals("NewZealand", StringComparison.OrdinalIgnoreCase) ||
-                 country.Equals("Antarctica", StringComparison.OrdinalIgnoreCase))
+
+        var hasInternationalRate = _context.InternationalShippingRates
+            .AsNoTracking()
+            .Include(r => r.Country)
+            .Any(r => r.Country != null && r.Country.Code.Equals(country));
+
+        if (hasInternationalRate)
         {
             methods.Add("International Courier");
         }
 
         return methods;
+    }
+
+    private static bool IsAustralia(string country)
+    {
+        return country.Equals("Australia");
     }
 }

@@ -2,20 +2,14 @@ namespace webapp.Models;
 
 public class Pet
 {
-    private int _id;
     private string _name = string.Empty;
     private string _description = string.Empty;
     private decimal _price;
     private string _imageUrl = string.Empty;
     private int _stockQuantity;
     private string _species = string.Empty;
-    private DateTime _createdAt;
 
-    public int Id
-    {
-        get { return _id; }
-        set { _id = value; }
-    }
+    public int Id { get; set; }
 
     public string Name
     {
@@ -53,9 +47,5 @@ public class Pet
         set { _species = string.IsNullOrEmpty(value) ? string.Empty : value; }
     }
 
-    public DateTime CreatedAt
-    {
-        get { return _createdAt; }
-        set { _createdAt = value; }
-    }
+    public DateTime CreatedAt { get; set; }
 }

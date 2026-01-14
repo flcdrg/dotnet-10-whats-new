@@ -10,13 +10,22 @@ public class PetstoreContext : DbContext
     }
 
     public DbSet<Pet> Pets { get; set; } = null!;
+    public DbSet<Country> Countries { get; set; } = null!;
     public DbSet<AustralianShippingRate> AustralianShippingRates { get; set; } = null!;
     public DbSet<InternationalShippingRate> InternationalShippingRates { get; set; } = null!;
+    public DbSet<PetShippingRestriction> PetShippingRestrictions { get; set; } = null!;
     public DbSet<Order> Orders { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Country>().HasData(
+            new Country { Id = 1, Code = "Australia", Name = "Australia" },
+            new Country { Id = 2, Code = "UK", Name = "United Kingdom" },
+            new Country { Id = 3, Code = "NewZealand", Name = "New Zealand" },
+            new Country { Id = 4, Code = "Antarctica", Name = "Antarctica" }
+        );
 
         // Seed Pet data
         modelBuilder.Entity<Pet>().HasData(
@@ -28,12 +37,12 @@ public class PetstoreContext : DbContext
 
         // Seed Australian Shipping Rates
         var australianStates = new[] { "NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT" };
-        var ausPostRates = australianStates.Select((state, index) => new AustralianShippingRate 
-        { 
-            Id = index + 1, 
-            State = state, 
-            ShippingMethod = "AustraliaPost", 
-            Rate = 10m 
+        var ausPostRates = australianStates.Select((state, index) => new AustralianShippingRate
+        {
+            Id = index + 1,
+            State = state,
+            ShippingMethod = "AustraliaPost",
+            Rate = 10m
         }).ToList();
 
         var courierRates = new List<AustralianShippingRate>
@@ -51,11 +60,15 @@ public class PetstoreContext : DbContext
         ausPostRates.AddRange(courierRates);
         modelBuilder.Entity<AustralianShippingRate>().HasData(ausPostRates);
 
+        modelBuilder.Entity<PetShippingRestriction>().HasData(
+            new PetShippingRestriction { Id = 1, PetId = 4, CountryId = 3 }
+        );
+
         // Seed International Shipping Rates
         modelBuilder.Entity<InternationalShippingRate>().HasData(
-            new InternationalShippingRate { Id = 1, Country = "UK", Rate1To10Kg = 35m, RateOver10Kg = 60m },
-            new InternationalShippingRate { Id = 2, Country = "NewZealand", Rate1To10Kg = 25m, RateOver10Kg = 45m },
-            new InternationalShippingRate { Id = 3, Country = "Antarctica", Rate1To10Kg = 50m, RateOver10Kg = 95m }
+            new InternationalShippingRate { Id = 1, CountryId = 2, Rate1To10Kg = 35m, RateOver10Kg = 60m },
+            new InternationalShippingRate { Id = 2, CountryId = 3, Rate1To10Kg = 25m, RateOver10Kg = 45m },
+            new InternationalShippingRate { Id = 3, CountryId = 4, Rate1To10Kg = 50m, RateOver10Kg = 95m }
         );
     }
 }

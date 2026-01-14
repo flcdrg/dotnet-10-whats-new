@@ -10,15 +10,17 @@ public class CartController : Controller
     private readonly IProductService _productService;
     private readonly IGstCalculationService _gstService;
     private readonly IShippingCalculationService _shippingService;
+    private readonly ICountryService _countryService;
     private readonly ILogger<CartController> _logger;
     private const string CartSessionKey = "ShoppingCart";
 
-    public CartController(IProductService productService, IGstCalculationService gstService, IShippingCalculationService shippingService, ILogger<CartController> logger)
+    public CartController(IProductService productService, IGstCalculationService gstService, IShippingCalculationService shippingService, ICountryService countryService, ILogger<CartController> logger)
     {
-        _productService = productService;
-        _gstService = gstService;
-        _shippingService = shippingService;
-        _logger = logger;
+        _productService = productService ?? throw new ArgumentNullException(nameof(productService));
+        _gstService = gstService ?? throw new ArgumentNullException(nameof(gstService));
+        _shippingService = shippingService ?? throw new ArgumentNullException(nameof(shippingService));
+        _countryService = countryService ?? throw new ArgumentNullException(nameof(countryService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public IActionResult Index()
@@ -30,19 +32,30 @@ public class CartController : Controller
     [HttpPost]
     public async Task<IActionResult> AddToCart(int petId, int quantity)
     {
-        var pet = await _productService.GetProductByIdAsync(petId);
+        var countryCode = await _countryService.GetCurrentCountryCodeAsync();
+        var pet = await _productService.GetProductByIdAsync(petId, countryCode);
         if (pet == null)
         {
-            return NotFound();
+            TempData["Error"] = "This pet is not available for your selected country.";
+            return RedirectToAction("Index", "Home");
+        }
+
+        if (await _productService.IsPetRestrictedAsync(petId, countryCode))
+        {
+            var countryName = (await _countryService.GetCountryByCodeAsync(countryCode))?.Name ?? countryCode;
+            TempData["Error"] = $"{pet.Name} cannot be shipped to {countryName}.";
+            return RedirectToAction("Index", "Home");
         }
 
         var cart = GetCartFromSession();
-        var cartItem = new CartItem();
-        cartItem.PetId = petId;
-        cartItem.PetName = pet.Name;
-        cartItem.PetPrice = pet.Price;
-        cartItem.Quantity = quantity;
-        cartItem.ImageUrl = pet.ImageUrl;
+        var cartItem = new CartItem
+        {
+            PetId = petId,
+            PetName = pet.Name,
+            PetPrice = pet.Price,
+            Quantity = quantity,
+            ImageUrl = pet.ImageUrl
+        };
 
         cart.AddItem(cartItem);
         SaveCartToSession(cart);
@@ -60,7 +73,7 @@ public class CartController : Controller
         return RedirectToAction("Index");
     }
 
-    public IActionResult Checkout()
+    public async Task<IActionResult> Checkout()
     {
         var cart = GetCartFromSession();
         if (cart.Items.Count == 0)
@@ -68,13 +81,13 @@ public class CartController : Controller
             return RedirectToAction("Index");
         }
 
-        ViewBag.AvailableCountries = new[] { "Australia", "UK", "NewZealand", "Antarctica" };
-        ViewBag.AustralianStates = new[] { "NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT" };
+        await PopulateCheckoutLookups(await _countryService.GetCurrentCountryCodeAsync());
 
         return View(cart);
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ProcessCheckout(Order order, string country, string state, string shippingMethod)
     {
         var cart = GetCartFromSession();
@@ -83,10 +96,55 @@ public class CartController : Controller
             return RedirectToAction("Index");
         }
 
+        var selectedCountry = await _countryService.GetCountryByCodeAsync(country);
+        if (selectedCountry == null)
+        {
+            ModelState.AddModelError(nameof(country), "Please select a valid country.");
+        }
+
+        if (!country.Equals("Australia", StringComparison.OrdinalIgnoreCase))
+        {
+            ModelState.Remove(nameof(order.State));
+            state = string.Empty;
+        }
+        else if (string.IsNullOrWhiteSpace(state))
+        {
+            ModelState.AddModelError(nameof(state), "State is required for Australian addresses.");
+        }
+
+        var restrictedItems = new List<string>();
+        foreach (var item in cart.Items)
+        {
+            if (await _productService.IsPetRestrictedAsync(item.PetId, country))
+            {
+                restrictedItems.Add(item.PetName);
+            }
+        }
+
+        if (restrictedItems.Count > 0)
+        {
+            var countryName = selectedCountry?.Name ?? country;
+            ModelState.AddModelError(string.Empty, $"The following items cannot be shipped to {countryName}: {string.Join(", ", restrictedItems)}");
+        }
+
+        var availableMethods = _shippingService.GetAvailableShippingMethods(country, state);
+        if (!availableMethods.Contains(shippingMethod))
+        {
+            ModelState.AddModelError(nameof(shippingMethod), "Please select a valid shipping method.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await PopulateCheckoutLookups(country);
+            return View("Checkout", cart);
+        }
+
+        await _countryService.SetCurrentCountryAsync(country);
+
         order.Items = cart.Items;
         order.Subtotal = cart.GetSubtotal();
-        order.Country = country;
-        order.State = state;
+        order.Country = selectedCountry?.Name ?? country;
+        order.State = country.Equals("Australia") ? state : string.Empty;
         order.ShippingMethod = shippingMethod;
 
         // Calculate shipping (assuming 2kg total weight for now)
@@ -114,10 +172,12 @@ public class CartController : Controller
         var cart = HttpContext.Session.GetString(CartSessionKey);
         if (string.IsNullOrEmpty(cart))
         {
-            var newCart = new ShoppingCart();
-            newCart.CartId = HttpContext.Session.Id;
-            newCart.CreatedAt = DateTime.UtcNow;
-            newCart.LastModifiedAt = DateTime.UtcNow;
+            var newCart = new ShoppingCart
+            {
+                CartId = HttpContext.Session.Id,
+                CreatedAt = DateTime.UtcNow,
+                LastModifiedAt = DateTime.UtcNow
+            };
             return newCart;
         }
 
@@ -128,5 +188,14 @@ public class CartController : Controller
     {
         var cartJson = JsonSerializer.Serialize(cart);
         HttpContext.Session.SetString(CartSessionKey, cartJson);
+    }
+
+    private async Task PopulateCheckoutLookups(string? selectedCountryCode)
+    {
+        ViewBag.AvailableCountries = await _countryService.GetAvailableCountriesAsync();
+        ViewBag.AustralianStates = new[] { "NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT" };
+        ViewBag.SelectedCountry = string.IsNullOrWhiteSpace(selectedCountryCode)
+            ? await _countryService.GetCurrentCountryCodeAsync()
+            : selectedCountryCode;
     }
 }

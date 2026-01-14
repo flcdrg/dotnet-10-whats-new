@@ -2,7 +2,6 @@ namespace webapp.Models;
 
 public class Order
 {
-    private int _id;
     private string _orderNumber = string.Empty;
     private List<CartItem> _items = new();
     private string _customerName = string.Empty;
@@ -15,15 +14,9 @@ public class Order
     private decimal _shippingCost;
     private decimal _gstAmount;
     private decimal _total;
-    private DateTime _createdAt;
-    private DateTime _lastModifiedAt;
     private string _status = "Pending"; // Pending, Processing, Shipped, Delivered
 
-    public int Id
-    {
-        get { return _id; }
-        set { _id = value; }
-    }
+    public int Id { get; set; }
 
     public string OrderNumber
     {
@@ -97,17 +90,9 @@ public class Order
         set { _total = value >= 0 ? value : 0; }
     }
 
-    public DateTime CreatedAt
-    {
-        get { return _createdAt; }
-        set { _createdAt = value; }
-    }
+    public DateTime CreatedAt { get; set; }
 
-    public DateTime LastModifiedAt
-    {
-        get { return _lastModifiedAt; }
-        set { _lastModifiedAt = value; }
-    }
+    public DateTime LastModifiedAt { get; set; }
 
     public string Status
     {

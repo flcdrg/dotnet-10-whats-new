@@ -11,10 +11,13 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<PetstoreContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=petstore.db"));
 
+builder.Services.AddHttpContextAccessor();
+
 // Register custom services
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IGstCalculationService, GstCalculationService>();
 builder.Services.AddScoped<IShippingCalculationService, ShippingCalculationService>();
+builder.Services.AddScoped<ICountryService, CountryService>();
 
 // Register session
 builder.Services.AddSession(options =>
