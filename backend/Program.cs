@@ -5,6 +5,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Add OpenAPI support
 builder.Services.AddOpenApi();
 
+const string CorsPolicy = "DefaultCors";
+
+// Configure CORS for webapp dev origin
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicy, policy =>
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
 // Add EF Core with environment-specific database configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var environment = builder.Environment;
@@ -37,6 +48,9 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+// Apply CORS
+app.UseCors(CorsPolicy);
 
 // Apply EF Core migrations at startup
 using (var scope = app.Services.CreateScope())
