@@ -2,6 +2,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add OpenAPI support
+builder.Services.AddOpenApi();
+
 // Add EF Core with environment-specific database configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var environment = builder.Environment;
@@ -29,6 +32,12 @@ else
 
 var app = builder.Build();
 
+// Map OpenAPI endpoint
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
+
 // Apply EF Core migrations at startup
 using (var scope = app.Services.CreateScope())
 {
@@ -36,7 +45,22 @@ using (var scope = app.Services.CreateScope())
     await dbContext.Database.MigrateAsync();
 }
 
-app.MapGet("/", () => "Hello World!");
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+app.MapGet("/", () => "Hello World!")
+    .WithName("GetRoot")
+    .WithOpenApi();
+
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
+    .WithName("GetHealth")
+    .WithOpenApi();
+
+app.MapGet("/api/accessories", GetAllAccessories)
+    .WithName("GetAllAccessories")
+    .WithOpenApi();
+
+async Task<IResult> GetAllAccessories(AppDbContext dbContext)
+{
+    var accessories = await dbContext.Accessories.ToListAsync();
+    return Results.Ok(accessories);
+}
 
 app.Run();
