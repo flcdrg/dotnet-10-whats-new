@@ -1,10 +1,17 @@
 using Demo.AdminWeb.Components;
+using Demo.AdminWeb.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+var backendBaseUrl = builder.Configuration["BackendApi:BaseUrl"] ?? "http://localhost:5148";
+builder.Services.AddHttpClient<AccessoryApiClient>(client =>
+{
+    client.BaseAddress = new Uri(backendBaseUrl);
+});
 
 var app = builder.Build();
 

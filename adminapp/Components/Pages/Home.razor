@@ -1,7 +1,329 @@
 ﻿@page "/"
+@using Demo.AdminWeb.Models
+@inject Demo.AdminWeb.Services.AccessoryApiClient ApiClient
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Accessories</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="mb-4">
+	<h1 class="h3 mb-3">Accessories</h1>
+	<p class="text-secondary">Manage accessories from the backend API.</p>
+</div>
 
-Welcome to your new app.
+<div class="card mb-4">
+	<div class="card-header fw-semibold">Add accessory</div>
+	<div class="card-body">
+		<EditForm Model="newAccessory" OnValidSubmit="HandleCreateAsync" FormName="createAccessory">
+			<DataAnnotationsValidator />
+			<ValidationSummary />
+
+			<div class="row g-3">
+				<div class="col-md-6">
+					<label class="form-label">Name</label>
+					<InputText class="form-control" @bind-Value="newAccessory.Name" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Category</label>
+					<InputText class="form-control" @bind-Value="newAccessory.Category" />
+				</div>
+				<div class="col-md-4">
+					<label class="form-label">Price</label>
+					<InputNumber class="form-control" @bind-Value="newAccessory.Price" />
+				</div>
+				<div class="col-md-4">
+					<label class="form-label">Stock</label>
+					<InputNumber class="form-control" @bind-Value="newAccessory.StockQuantity" />
+				</div>
+				<div class="col-md-4">
+					<label class="form-label">Image URL (optional)</label>
+					<InputText class="form-control" @bind-Value="newAccessory.ImageUrl" />
+				</div>
+				<div class="col-12">
+					<label class="form-label">Description (optional)</label>
+					<InputTextArea class="form-control" rows="2" @bind-Value="newAccessory.Description" />
+				</div>
+			</div>
+
+			<div class="mt-3 d-flex gap-2">
+				<button class="btn btn-primary" type="submit" disabled="@(isSaving)">
+					@(isSaving ? "Saving…" : "Add accessory")
+				</button>
+				@if (!string.IsNullOrWhiteSpace(saveError))
+				{
+					<span class="text-danger">@saveError</span>
+				}
+			</div>
+		</EditForm>
+	</div>
+</div>
+
+<div class="card">
+	<div class="card-header fw-semibold">Existing accessories</div>
+	<div class="card-body">
+		@if (isLoading)
+		{
+			<p class="text-secondary">Loading accessories…</p>
+		}
+		else if (!string.IsNullOrWhiteSpace(loadError))
+		{
+			<p class="text-danger">@loadError</p>
+		}
+		else if (accessories.Count == 0)
+		{
+			<p class="text-secondary">No accessories found.</p>
+		}
+		else
+		{
+			<div class="table-responsive">
+				<table class="table table-sm align-middle">
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Category</th>
+							<th class="text-end">Price</th>
+							<th class="text-end">Stock</th>
+							<th>Description</th>
+							<th class="text-end">Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var item in accessories)
+						{
+							var isEditing = editingId == item.Id;
+							<tr>
+								<td>
+									@if (isEditing)
+									{
+										<InputText class="form-control form-control-sm" @bind-Value="editModel.Name" />
+									}
+									else
+									{
+										@item.Name
+									}
+								</td>
+								<td>
+									@if (isEditing)
+									{
+										<InputText class="form-control form-control-sm" @bind-Value="editModel.Category" />
+									}
+									else
+									{
+										@item.Category
+									}
+								</td>
+								<td class="text-end">
+									@if (isEditing)
+									{
+										<InputNumber class="form-control form-control-sm text-end" @bind-Value="editModel.Price" />
+									}
+									else
+									{
+										@item.Price.ToString("C")
+									}
+								</td>
+								<td class="text-end">
+									@if (isEditing)
+									{
+										<InputNumber class="form-control form-control-sm text-end" @bind-Value="editModel.StockQuantity" />
+									}
+									else
+									{
+										@item.StockQuantity
+									}
+								</td>
+								<td class="w-25">
+									@if (isEditing)
+									{
+										<InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="editModel.Description" />
+									}
+									else
+									{
+										@item.Description
+									}
+								</td>
+								<td class="text-end">
+									@if (isEditing)
+									{
+										<div class="btn-group btn-group-sm" role="group">
+											<button class="btn btn-success" @onclick="() => SaveEditAsync(item.Id)">Save</button>
+											<button class="btn btn-outline-secondary" @onclick="CancelEdit">Cancel</button>
+										</div>
+									}
+									else
+									{
+										<div class="btn-group btn-group-sm" role="group">
+											<button class="btn btn-outline-primary" @onclick="() => BeginEdit(item)">Edit</button>
+											<button class="btn btn-outline-danger" @onclick="() => DeleteAsync(item.Id)">Delete</button>
+										</div>
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</div>
+</div>
+
+@code {
+	private List<AccessoryDto> accessories = [];
+	private AccessoryUpsert newAccessory = new();
+	private AccessoryUpsert editModel = new();
+	private int? editingId;
+	private bool isLoading = true;
+	private bool isSaving;
+	private string? loadError;
+	private string? saveError;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadAsync();
+	}
+
+	private async Task LoadAsync()
+	{
+		isLoading = true;
+		loadError = null;
+		try
+		{
+			var result = await ApiClient.GetAllAsync();
+			accessories = result.ToList();
+		}
+		catch (Exception ex)
+		{
+			loadError = ex.Message;
+		}
+		finally
+		{
+			isLoading = false;
+			StateHasChanged();
+		}
+	}
+
+	private async Task HandleCreateAsync()
+	{
+		isSaving = true;
+		saveError = null;
+		try
+		{
+			var (success, error, item) = await ApiClient.CreateAsync(newAccessory);
+			if (!success)
+			{
+				saveError = error;
+				return;
+			}
+
+			if (item is not null)
+			{
+				accessories.Add(item);
+				ResetNewAccessory();
+			}
+		}
+		catch (Exception ex)
+		{
+			saveError = ex.Message;
+		}
+		finally
+		{
+			isSaving = false;
+		}
+	}
+
+	private void ResetNewAccessory()
+	{
+		newAccessory = new AccessoryUpsert();
+	}
+
+	private void BeginEdit(AccessoryDto item)
+	{
+		editingId = item.Id;
+		editModel = new AccessoryUpsert
+		{
+			Name = item.Name,
+			Category = item.Category,
+			Price = item.Price,
+			StockQuantity = item.StockQuantity,
+			Description = item.Description,
+			ImageUrl = item.ImageUrl
+		};
+	}
+
+	private void CancelEdit()
+	{
+		editingId = null;
+	}
+
+	private async Task SaveEditAsync(int id)
+	{
+		if (editingId is null)
+		{
+			return;
+		}
+
+		isSaving = true;
+		saveError = null;
+		try
+		{
+			var (success, error) = await ApiClient.UpdateAsync(id, editModel);
+			if (!success)
+			{
+				saveError = error;
+				return;
+			}
+
+			var index = accessories.FindIndex(a => a.Id == id);
+			if (index >= 0)
+			{
+				accessories[index] = new AccessoryDto
+				{
+					Id = id,
+					Name = editModel.Name,
+					Description = editModel.Description,
+					Category = editModel.Category,
+					Price = editModel.Price,
+					StockQuantity = editModel.StockQuantity,
+					ImageUrl = editModel.ImageUrl
+				};
+			}
+
+			editingId = null;
+		}
+		catch (Exception ex)
+		{
+			saveError = ex.Message;
+		}
+		finally
+		{
+			isSaving = false;
+		}
+	}
+
+	private async Task DeleteAsync(int id)
+	{
+		isSaving = true;
+		saveError = null;
+		try
+		{
+			var (success, error) = await ApiClient.DeleteAsync(id);
+			if (!success)
+			{
+				saveError = error;
+				return;
+			}
+
+			accessories.RemoveAll(a => a.Id == id);
+			if (editingId == id)
+			{
+				editingId = null;
+			}
+		}
+		catch (Exception ex)
+		{
+			saveError = ex.Message;
+		}
+		finally
+		{
+			isSaving = false;
+		}
+	}
+}
