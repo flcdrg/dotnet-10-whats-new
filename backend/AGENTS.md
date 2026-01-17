@@ -32,6 +32,8 @@ backend/
 
 ## Running the Application
 
+### Foreground (Blocking)
+
 ```bash
 cd backend
 dotnet run
@@ -42,6 +44,33 @@ Or run with HTTPS:
 ```bash
 cd backend
 dotnet run --launch-profile https
+```
+
+### Background (PowerShell)
+
+To run the application in the background without blocking the terminal, first change the current directory to the where Demo.Api.csproj is located, then use:
+
+```powershell
+Start-Job -ScriptBlock { dotnet run } -WorkingDirectory $pwd
+```
+
+Check the job status:
+
+```powershell
+Get-Job
+```
+
+View background job output:
+
+```powershell
+Receive-Job -Id <JobId>
+```
+
+Stop the background job:
+
+```powershell
+Stop-Job -Id <JobId>
+Remove-Job -Id <JobId>
 ```
 
 ## Development Guidelines
@@ -125,3 +154,8 @@ app.MapPost("/api/products", CreateProduct)
 - Consider using separate handler classes for complex logic
 - Ensure CORS is configured when webapp makes requests
 - Test endpoints using browser, Postman, or HTTP files
+- **Important**: On Windows, avoid Unix commands like `head`, `tail`, `grep`. Use PowerShell equivalents:
+  - Unix `head -n 50`: PowerShell `Select-Object -First 50`
+  - Unix `tail -n 50`: PowerShell `Select-Object -Last 50`
+  - Unix `grep`: PowerShell `Where-Object` or `Select-String`
+  - Unix `|` (pipe): PowerShell also uses `|` but with different semantics (objects vs text)

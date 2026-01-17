@@ -95,3 +95,9 @@ When making changes to this project:
 - **Port conflicts**: If services fail to start, check if the configured ports are already in use
 - **CORS issues**: Ensure backend CORS configuration includes webapp origin (<http://localhost:5173>)
 - **Node version**: Webapp requires Node 24.x as specified in the AGENTS.md
+
+- **Important**: On Windows, avoid Unix commands like `head`, `tail`, `grep`. Use PowerShell equivalents:
+  - Unix `head -n 50`: PowerShell `Select-Object -First 50`
+  - Unix `tail -n 50`: PowerShell `Select-Object -Last 50`
+  - Unix `grep`: PowerShell `Where-Object` or `Select-String`
+  - Unix `|` (pipe): PowerShell also uses `|` but with different semantics (objects vs text)

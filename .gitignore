@@ -419,3 +419,4 @@ FodyWeavers.xsd
 
 # SQL Lite
 *.db*
+/backend/*.exe
